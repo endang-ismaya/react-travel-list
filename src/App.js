@@ -11,6 +11,14 @@ function App() {
     setItems((items) => items.filter((item) => item.id !== itemId));
   }
 
+  function handleClearItems() {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete all items?"
+    );
+
+    if (confirmed) setItems([]);
+  }
+
   function handleToggleItem(itemId) {
     setItems((items) =>
       items.map((item) =>
@@ -27,6 +35,7 @@ function App() {
         items={items}
         onDeleteItem={handleDeleteItem}
         onToggleItem={handleToggleItem}
+        onClearItems={handleClearItems}
       />
       <Stats items={items} />
     </div>
@@ -49,7 +58,6 @@ function Form({ onAddItems }) {
     if (description.length <= 3) return;
 
     const newItem = { description, quantity, package: false, id: Date.now() };
-    console.log(newItem);
 
     onAddItems(newItem);
 
@@ -82,11 +90,27 @@ function Form({ onAddItems }) {
   );
 }
 
-function PackingList({ items, onDeleteItem, onToggleItem }) {
+function PackingList({ items, onDeleteItem, onToggleItem, onClearItems }) {
+  const [sortBy, setSortBy] = useState("input");
+
+  let sortedItems;
+
+  if (sortBy === "input") sortedItems = items;
+
+  if (sortBy === "description")
+    sortedItems = items
+      .slice()
+      .sort((a, b) => a.description.localeCompare(b.description));
+
+  if (sortBy === "packed")
+    sortedItems = items
+      .slice()
+      .sort((a, b) => Number(a.packed) - Number(b.packed));
+
   return (
     <div className="list">
       <ul>
-        {items.map((item) => (
+        {sortedItems.map((item) => (
           <Item
             item={item}
             key={item.id}
@@ -95,24 +119,35 @@ function PackingList({ items, onDeleteItem, onToggleItem }) {
           />
         ))}
       </ul>
+
+      <div className="actions">
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <option value="input">Sort by input order</option>
+          <option value="description">Sort by description</option>
+          <option value="packed">Sort by packed status</option>
+        </select>
+        <button onClick={onClearItems}>Clear list</button>
+      </div>
     </div>
   );
 }
 
 function Item({ item, onDeleteItem, onToggleItem }) {
-  const { id, description, quantity, packed } = item;
-
   return (
-    <li key={id}>
-      <input type="checkbox" value={packed} onChange={() => onToggleItem(id)} />
+    <li>
+      <input
+        type="checkbox"
+        value={item.packed}
+        onChange={() => onToggleItem(item.id)}
+      />
       <span
         style={
           item.packed ? { textDecoration: "line-through", color: "gray" } : {}
         }
       >
-        {quantity} {description}
+        {item.quantity} {item.description}
       </span>
-      <button onClick={() => onDeleteItem(id)}>❌</button>
+      <button onClick={() => onDeleteItem(item.id)}>❌</button>
     </li>
   );
 }
